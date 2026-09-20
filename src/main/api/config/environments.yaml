@@ -1,0 +1,11 @@
+local:
+  api:
+    base_url: "http://localhost:4111/api"
+  timeout: 10
+  verify_ssl: false
+
+  database:
+    driver: "postgresql+psycopg2"
+    host: "localhost"
+    port: 5432
+    name: "symfony_db"

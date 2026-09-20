@@ -1,0 +1,9 @@
+pytest
+requests
+pydantic
+PyYAML
+rstr
+allure-pytest
+python-dotenv
+SQLAlchemy
+psycopg2-binary
