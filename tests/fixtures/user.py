@@ -1,5 +1,3 @@
-from http import HTTPStatus
-
 import pytest
 
 from main.api.data_generators.model_generator import RandomModelGenerator
@@ -12,10 +10,7 @@ from main.db.repositories.user_repository import UserRepository
 @pytest.fixture
 def create_user_request(api_manager):
     user_request = RandomModelGenerator.generate(CreateUserRequest, )
-    api_manager.admin_steps.create_user(
-        user_request,
-        expected_status=HTTPStatus.OK,
-    )
+    api_manager.admin_steps.create_user(user_request)
     return user_request
 
 @pytest.fixture

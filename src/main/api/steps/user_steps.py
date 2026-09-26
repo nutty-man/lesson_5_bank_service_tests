@@ -11,5 +11,5 @@ class UserSteps:
         self.account_api = account_api
 
     @allure.step("Создать счёт пользователя")
-    def create_account(self, expected_status: int | HTTPStatus) -> CreateAccountResponse:
-        return self.account_api.create_account(expected_status=expected_status)
+    def create_account(self):
+        return self.account_api.create_account()
