@@ -1,4 +1,3 @@
-from http import HTTPStatus
 from typing import Callable
 
 import requests
@@ -16,10 +15,10 @@ import allure
 
 class AdminSteps(BaseSteps):
     def __init__(self,
-            user_api: UserApi,
-            auth_api: AuthApi,
-            set_auth_token: Callable[[str], None],
-            created_obj: list):
+                 user_api: UserApi,
+                 auth_api: AuthApi,
+                 set_auth_token: Callable[[str], None],
+                 created_obj: list):
         super().__init__(created_obj)
         self.user_api = user_api
         self.auth_api = auth_api
@@ -28,43 +27,41 @@ class AdminSteps(BaseSteps):
     @allure.step("Авторизация пользователя")
     def login_user(
             self,
-            login_user_request: LoginUserRequest,
-            expected_status: int | HTTPStatus,
+            login_user_request: LoginUserRequest
     ) -> LoginUserResponse:
         response = self.auth_api.login(
-            credentials=login_user_request,
-            expected_status=expected_status,
+            credentials=login_user_request
         )
-        self.set_auth_token(response.token)
-        return response
+
+        login_response = LoginUserResponse.model_validate(response.json())
+
+        self.set_auth_token(login_response.token)
+
+        return login_response
 
     @allure.step("Создание пользователя")
     def create_user(
             self,
-            create_user_request: CreateUserRequest,
-            expected_status: int | HTTPStatus,
-    ) -> CreateUserResponse:
+            create_user_request: CreateUserRequest
+    ):
         response = self.user_api.create_user(
-            user_data=create_user_request,
-            expected_status=expected_status,
+            user_data=create_user_request
         )
-        self.created_obj.append(response)
+
+        if response.ok:
+            user = CreateUserResponse.model_validate(response.json())
+            self.created_obj.append(user)
+
         return response
 
     @allure.step("Проверка создания невалидного пользователя")
     def create_invalid_user(self,
-            create_user_request: CreateUserRequest,
-            expected_status: int | HTTPStatus) -> requests.Response:
-        return self.user_api.create_user_raw(
-            user_data=create_user_request,
-            expected_status=expected_status,
-        )
+                            create_user_request: CreateUserRequest) -> requests.Response:
+        return self.user_api.create_user(
+            user_data=create_user_request)
 
     @allure.step("Удаление пользователя по user_id")
     def delete_user(self,
-            user_id: int,
-            expected_status: int | HTTPStatus) -> requests.Response:
+                    user_id: int) -> requests.Response:
         return self.user_api.delete_user(
-            user_id=user_id,
-            expected_status=expected_status,
-        )
+            user_id=user_id)

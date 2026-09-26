@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 from main.api.classes.api_manager import ApiManager
 from main.api.config.api_config import load_config, ApiConfig
+from main.api.config.database_config import DatabaseConfig, load_database_config
 from tests.fixtures.cleanup import clean_user
 
 pytest_plugins = [
@@ -27,5 +28,11 @@ def pytest_addoption(parser):
     )
 
 @pytest.fixture(scope="session")
-def config() -> ApiConfig:
-    return load_config()
+def config(pytestconfig) -> ApiConfig:
+    environment = pytestconfig.getoption("--env")
+    return load_config(environment)
+
+@pytest.fixture(scope="session")
+def database_config(pytestconfig) -> DatabaseConfig:
+    environment = pytestconfig.getoption("--env")
+    return load_database_config(environment)

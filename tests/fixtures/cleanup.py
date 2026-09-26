@@ -10,6 +10,10 @@ def clean_user(objects: List[Any], api_manager: ApiManager):
         if isinstance(u, CreateUserResponse):
             api_manager.admin_steps.delete_user(u.id)
         else:
+            # logging.warning(
+            #     f"Ошибка удаления пользователя по айди = {getattr(u, 'id', None)}"
+            # )
             logging.warning(
-                f"Ошибка удаления пользователя по айди = {getattr(u, 'id', None)}"
+                f"Не удалось удалить объект: "
+                f"type={type(u)}, value={u}, id={getattr(u, 'id', None)}"
             )

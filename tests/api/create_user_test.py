@@ -1,17 +1,21 @@
 from http import HTTPStatus
 
+import allure
 import pytest
 
 from main.api.classes.api_manager import ApiManager
 from main.api.data_generators.model_generator import RandomModelGenerator
 from main.api.schemas.dto.request.user.create_user_request import CreateUserRequest
-from main.utils.enums.role import Role
+from main.api.schemas.dto.response.user.create_user_response import CreateUserResponse
 
 from main.db.repositories.user_repository import UserRepository
 
 
 @pytest.mark.api
 class TestCreateUser:
+
+    @allure.story("Создание пользователя")
+    @allure.title("Успешное создание пользователя")
     @pytest.mark.parametrize(
         'create_user_request',
         [RandomModelGenerator.generate(CreateUserRequest)]
@@ -20,17 +24,28 @@ class TestCreateUser:
                                create_user_request: CreateUserRequest, user_repository: UserRepository):
         response = api_manager.admin_steps.create_user(create_user_request)
 
-        assert response.status == HTTPStatus.OK, f'Полученный статус= {response.status}, отличается от 200 ОК'
+        assert response.status_code == HTTPStatus.OK, (f'Полученный статус= {response.status_code}, '
+                                                       f'отличается от 200 OK')
 
-        assert create_user_request.username == response.username, (f'Имя польз-ля невалидное, '
-                                                                   f'полученное имя в ответе= {response.username}')
-        assert create_user_request.role == response.role, (f'Роль польз-ля невалидна, '
-                                                           f'полученная в ответе роль= {response.role}')
+        user = CreateUserResponse.model_validate(response.json())
+
+        assert create_user_request.username == user.username, (
+            f'Имя польз-ля невалидное, ожидалось= {create_user_request.username}'
+            f'полученное имя в ответе= {user.username}')
+        assert create_user_request.role == user.role, (f'Роль польз-ля невалидна, '
+                                                       f'ожидалась {create_user_request.role}'
+                                                       f'полученная в ответе роль= {user.role}')
 
         user_from_db = user_repository.get_user_by_username(create_user_request.username)
 
-        assert user_from_db.username == create_user_request.username, 'Созданного пользователя нет в БД'
+        assert user_from_db is not None, 'Созданный пользователь не найден в БД'
 
+        assert user_from_db.username == create_user_request.username, (f'В БД ожидалось имя '
+                                                                       f'{create_user_request.username}, '
+                                                                       f'получено {user_from_db.username}')
+
+    # @allure.story("Создание пользователя")
+    # @allure.title("Некорректное создание пользователя")
     # @pytest.mark.parametrize(
     #     'username, password',
     #     [

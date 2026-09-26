@@ -1,6 +1,5 @@
 import json
 import logging
-from http import HTTPStatus
 from typing import Any
 
 import allure
@@ -8,7 +7,8 @@ import requests
 
 from main.api.config.api_config import ApiConfig
 from main.api.specs.request_specs import RequestSpecs
-from main.api.specs.response_specs import ResponseSpecs
+from main.utils.logger.logger import log_request_and_response
+from main.utils.logger.mask import sanitize
 
 
 class Requester:
@@ -22,19 +22,22 @@ class Requester:
         self.session.headers.update(RequestSpecs.base_headers())
 
     def send_request(
-        self,
-        method: str,
-        endpoint: str,
-        json_data: dict[str, Any] | None = None,
-        headers: dict[str, str | None] | None = None,
-        expected_status: int | HTTPStatus = HTTPStatus.OK,
+            self,
+            method: str,
+            endpoint: str,
+            json_data: dict[str, Any] | None = None,
+            headers: dict[str, str | None] | None = None,
     ) -> requests.Response:
         url = f"{self.base_url.rstrip('/')}/{endpoint.lstrip('/')}"
 
         with allure.step(f"{method.upper()} {endpoint}"):
             if json_data is not None:
                 allure.attach(
-                    json.dumps(json_data, ensure_ascii=False, indent=2),
+                    json.dumps(
+                        sanitize(json_data),
+                        ensure_ascii=False,
+                        indent=2,
+                    ),
                     name="Request body",
                     attachment_type=allure.attachment_type.JSON,
                 )
@@ -48,21 +51,22 @@ class Requester:
                 verify=self.verify_ssl,
             )
 
+            try:
+                response_body = sanitize(response.json())
+                response_body = json.dumps(
+                    response_body,
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            except ValueError:
+                response_body = response.text
+
             allure.attach(
-                response.text,
+                response_body,
                 name="Response body",
                 attachment_type=allure.attachment_type.JSON,
             )
 
-        self.log_request_and_response(response)
-        ResponseSpecs.validate_status(response, expected_status)
-        return response
+            log_request_and_response(response)
 
-    def log_request_and_response(self, response: requests.Response) -> None:
-        request = response.request
-        self.logger.info(
-            "%s %s -> %s",
-            request.method,
-            request.url,
-            response.status_code,
-        )
+        return response

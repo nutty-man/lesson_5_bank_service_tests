@@ -1,4 +1,3 @@
-from http import HTTPStatus
 from typing import Any
 
 import requests
@@ -43,10 +42,8 @@ class ApiManager:
     def set_auth_token(self, token: str) -> None:
         self.session.headers.update(RequestSpecs.auth_headers(token))
 
-    def authenticate(self,
-        credentials: LoginUserRequest,
-        expected_status: int | HTTPStatus) -> LoginUserResponse:
-        return self.admin_steps.login_user(credentials, expected_status)
+    def authenticate(self, credentials: LoginUserRequest) -> LoginUserResponse:
+        return self.admin_steps.login_user(credentials)
 
     def clear_auth(self) -> None:
         self.session.headers.pop("Authorization", None)
