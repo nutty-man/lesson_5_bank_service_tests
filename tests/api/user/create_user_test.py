@@ -21,20 +21,15 @@ class TestCreateUser:
         [RandomModelGenerator.generate(CreateUserRequest)]
     )
     def test_create_user_valid(self, api_manager: ApiManager,
-                               create_user_request: CreateUserRequest, user_repository: UserRepository):
-        response = api_manager.admin_steps.create_user(create_user_request)
+                               create_user_request: CreateUserRequest, user_repository: UserRepository,
+                               created_user):
 
-        assert response.status_code == HTTPStatus.OK, (f'Полученный статус= {response.status_code}, '
-                                                       f'отличается от 200 OK')
-
-        user = CreateUserResponse.model_validate(response.json())
-
-        assert create_user_request.username == user.username, (
+        assert create_user_request.username == created_user.username, (
             f'Имя польз-ля невалидное, ожидалось= {create_user_request.username}'
-            f'полученное имя в ответе= {user.username}')
-        assert create_user_request.role == user.role, (f'Роль польз-ля невалидна, '
+            f'полученное имя в ответе= {created_user.username}')
+        assert create_user_request.role == created_user.role, (f'Роль польз-ля невалидна, '
                                                        f'ожидалась {create_user_request.role}'
-                                                       f'полученная в ответе роль= {user.role}')
+                                                       f'полученная в ответе роль= {created_user.role}')
 
         user_from_db = user_repository.get_user_by_username(create_user_request.username)
 

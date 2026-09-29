@@ -40,13 +40,8 @@ class AdminSteps(BaseSteps):
         return login_response
 
     @allure.step("Создание пользователя")
-    def create_user(
-            self,
-            create_user_request: CreateUserRequest
-    ):
-        response = self.user_api.create_user(
-            user_data=create_user_request
-        )
+    def create_user(self, create_user_request: CreateUserRequest):
+        response = self.user_api.create_user(user_data=create_user_request)
 
         if response.ok:
             user = CreateUserResponse.model_validate(response.json())
