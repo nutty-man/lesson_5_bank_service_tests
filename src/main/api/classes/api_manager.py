@@ -4,7 +4,7 @@ import requests
 
 from main.api.clients.account_api import AccountApi
 from main.api.clients.auth_api import AuthApi
-from main.api.clients.transaction_api import TransactionApi
+from main.api.clients.credit_api import CreditApi
 from main.api.clients.user_api import UserApi
 from main.api.config.api_config import ApiConfig
 from main.api.foundation.requester import Requester
@@ -28,7 +28,7 @@ class ApiManager:
         self.auth_api = AuthApi(self.requester)
         self.account_api = AccountApi(self.requester)
         self.user_api = UserApi(self.requester)
-        self.transaction_api = TransactionApi(self.requester)
+        self.credit_api = CreditApi(self.requester)
 
         self.admin_steps = AdminSteps(
             user_api=self.user_api,
@@ -37,7 +37,7 @@ class ApiManager:
             created_obj=self.created_obj,
         )
 
-        self.user_steps = UserSteps(account_api=self.account_api)
+        self.user_steps = UserSteps(account_api=self.account_api, credit_api=self.credit_api)
 
     def set_auth_token(self, token: str) -> None:
         self.session.headers.update(RequestSpecs.auth_headers(token))

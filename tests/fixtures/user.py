@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from main.api.schemas.dto.response.user.create_user_response import CreateUserResponse
 from main.db.repositories.user_repository import UserRepository
+from main.utils.enums.role import Role
 
 
 @pytest.fixture
@@ -27,4 +28,20 @@ def created_user(create_user_request: CreateUserRequest, api_manager):
                                                    f'отличается от 200 OK')
 
     user = CreateUserResponse.model_validate(response.json())
+    return user
+
+@pytest.fixture
+def created_credit_user(create_user_request: CreateUserRequest, api_manager):
+
+    user_data = create_user_request.model_copy(
+        update={"role": Role.CREDIT_SECRET}
+    )
+
+    response = api_manager.admin_steps.create_user(user_data)
+
+    assert response.status_code == HTTPStatus.OK, (f'Полученный статус= {response.status_code}, '
+                                                   f'отличается от 200 OK')
+
+    user = CreateUserResponse.model_validate(response.json())
+
     return user

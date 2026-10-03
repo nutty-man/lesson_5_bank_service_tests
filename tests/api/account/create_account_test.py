@@ -53,8 +53,9 @@ class TestCreateAccount:
 
         first_response = api_manager.user_steps.create_account()
 
-        assert first_response.status_code == HTTPStatus.CREATED, (f'Полученный статус {first_response.status_code}'
-                                                                  f'отличается от ожидаемого {HTTPStatus.CREATED}')
+        assert first_response.status_code == HTTPStatus.CREATED, \
+            (f'Полученный статус {first_response.status_code}'
+             f'отличается от ожидаемого {HTTPStatus.CREATED}')
 
         first_account = CreateAccountResponse.model_validate(first_response.json())
 
@@ -62,8 +63,10 @@ class TestCreateAccount:
             f'Ошибка создания аккаунта {first_account}'
 
         second_response = api_manager.user_steps.create_account()
-        assert second_response.status_code == HTTPStatus.CREATED, (f'Полученный статус {second_response.status_code}'
-                                                                   f'отличается от ожидаемого {HTTPStatus.CREATED}')
+
+        assert second_response.status_code == HTTPStatus.CREATED, \
+            (f'Полученный статус {second_response.status_code}'
+             f'отличается от ожидаемого {HTTPStatus.CREATED}')
 
         second_account = CreateAccountResponse.model_validate(second_response.json())
 
@@ -72,5 +75,6 @@ class TestCreateAccount:
 
         response = api_manager.user_steps.create_account()
 
-        assert response.status_code == HTTPStatus.CONFLICT, (f'Полученный статус {response.status_code}'
-                                                             f'отличается от ожидаемого {HTTPStatus.CONFLICT}')
+        assert response.status_code == HTTPStatus.CONFLICT, \
+            (f'Полученный статус {response.status_code}'
+             f'отличается от ожидаемого {HTTPStatus.CONFLICT}')

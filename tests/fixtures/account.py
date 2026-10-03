@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 from main.api.classes.api_manager import ApiManager
 from main.api.data_generators.model_generator import RandomModelGenerator
+from main.api.schemas.dto.request.credit.create_credit_repay_request import CreateCreditRepayRequest
+from main.api.schemas.dto.request.credit.create_credit_request import CreateCreditRequest
 from main.api.schemas.dto.request.user.create_user_request import CreateUserRequest
 from main.api.schemas.dto.request.user.login_user_request import LoginUserRequest
 from main.api.schemas.dto.request.account.account_deposit_request import AccountDepositRequest
@@ -17,7 +19,6 @@ from main.db.repositories.account_repository import AccountRepository
 @pytest.fixture
 def account_repository(db_session: Session):
     return AccountRepository(db_session)
-
 
 @pytest.fixture
 def created_account(
@@ -51,3 +52,13 @@ def account_transfer_data():
 def create_deposit_data():
     deposit_data = RandomModelGenerator.generate(AccountDepositRequest)
     return deposit_data
+
+@pytest.fixture
+def create_credit_data():
+    credit_data = RandomModelGenerator.generate(CreateCreditRequest)
+    return credit_data
+
+@pytest.fixture
+def create_credit_repay_data():
+    credit_repay_data = RandomModelGenerator.generate(CreateCreditRepayRequest)
+    return credit_repay_data
