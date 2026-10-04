@@ -12,6 +12,6 @@ class Credits(BaseModel):
     createdAt: str
 
 
-class CreditHistoryRequest(BaseModel):
+class CreditHistoryResponse(BaseModel):
     userId: int
     credits: List[Credits]

@@ -23,12 +23,11 @@ from tests.fixtures.account import create_credit_repay_data
 class TestCreateRepayCredit:
 
     @allure.story("Погашение кредита")
-    @allure.title("Успешное Погашение кредита пользователем")
+    @allure.title("Успешное погашение кредита пользователем")
     def test_create_repay_credit(self, api_manager: ApiManager,
                                  created_credit_account,
                                  created_credit,
-                                 create_credit_repay_data: CreateCreditRepayRequest,
-                                 account_repository: AccountRepository):
+                                 create_credit_repay_data: CreateCreditRepayRequest):
         repay_data = create_credit_repay_data.model_copy(
             update={'accountId': created_credit.id,
                     'creditId': created_credit.creditId,
