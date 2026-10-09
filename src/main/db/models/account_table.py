@@ -13,5 +13,3 @@ class AccountTable(Base):
 
     def __repr__(self):
         return f'<Account(id={self.id}, user_id={self.user_id}, number={self.number}, balance={self.balance}>'
-
-

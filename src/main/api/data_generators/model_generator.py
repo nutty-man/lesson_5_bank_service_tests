@@ -5,7 +5,7 @@ from enum import Enum
 import rstr
 
 from typing import get_type_hints, get_origin, Annotated, get_args, Any
-from main.api.data_generators.creation_rule import CreationRule
+from main.api.data_generators.creation_rule import CreationRule, RangeCreationRule
 from main.utils.enums.role import Role
 
 
@@ -28,14 +28,19 @@ class RandomModelGenerator:
                 actual_type, *annotations = get_args(annotated_type)
 
                 for annotation in annotations:
-                    if isinstance(annotation, CreationRule):
+                    if isinstance(annotation, (CreationRule, RangeCreationRule)):
                         rule = annotation
                         break
 
-            if rule:
+            if isinstance(rule, CreationRule):
                 value = RandomModelGenerator._generate_from_regex(
                     rule.regex,
                     actual_type,
+                )
+            elif isinstance(rule, RangeCreationRule):
+                value = random.randint(
+                    rule.min_value,
+                    rule.max_value,
                 )
             else:
                 value = RandomModelGenerator._generate_value(actual_type)
@@ -71,5 +76,3 @@ class RandomModelGenerator:
             return random.choice([True, False])
 
         return None
-
-

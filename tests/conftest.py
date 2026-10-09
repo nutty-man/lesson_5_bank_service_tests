@@ -3,15 +3,14 @@ import os
 import pytest
 from dotenv import load_dotenv
 
-from main.api.classes.api_manager import ApiManager
 from main.api.config.api_config import load_config, ApiConfig
 from main.api.config.database_config import DatabaseConfig, load_database_config
-from tests.fixtures.cleanup import clean_user
 
 pytest_plugins = [
     "tests.fixtures.user",
     "tests.fixtures.api",
     "tests.fixtures.account",
+    "tests.fixtures.credit",
     "tests.fixtures.object",
     "tests.fixtures.cleanup",
     "tests.fixtures.db",
