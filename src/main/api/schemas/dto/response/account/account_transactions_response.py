@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from main.api.schemas.dto.base_model import BaseModel
 
@@ -6,8 +6,8 @@ from main.api.schemas.dto.base_model import BaseModel
 class Transactions(BaseModel):
     transactionId: int
     type: str
-    amount: int
-    fromAccountId: int
+    amount: float
+    fromAccountId: Optional[int]
     toAccountId: int
     createdAt: str
 

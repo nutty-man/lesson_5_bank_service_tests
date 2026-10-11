@@ -59,6 +59,10 @@ def log_request_and_response(response):
 
         try:
             response_data = sanitize(response.json())
+
+            if isinstance(response_data, dict):
+                response_data.pop("trace", None)
+
         except ValueError:
             pass
 
