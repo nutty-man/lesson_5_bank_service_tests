@@ -44,11 +44,15 @@ class TestTransferToAccount:
             self,
             api_manager: ApiManager,
             created_account: CreateAccountResponse,
-            nonexistent_account_id: Callable[[int, int], int],
+            account_repository: AccountRepository,
+            nonexistent_id: Callable[
+                [Callable[[int], object | None], int, int], int,],
             transfer_data_factory: Callable[..., AccountTransferRequest],
     ):
         data = transfer_data_factory(
-            fromAccountId=nonexistent_account_id(1, 9999),
+            fromAccountId=nonexistent_id(
+                account_repository.get_account_by_id,
+                1, 9999),
             toAccountId=created_account.id,
         )
 

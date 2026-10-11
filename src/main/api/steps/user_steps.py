@@ -1,6 +1,5 @@
 from http import HTTPStatus
 from typing import Optional
-from collections.abc import Callable
 from requests import Response
 
 import allure
@@ -13,6 +12,9 @@ from main.api.schemas.dto.request.credit.create_credit_repay_request import Crea
 from main.api.schemas.dto.request.credit.create_credit_request import CreateCreditRequest
 from main.api.schemas.dto.response.account.account_transactions_response import AccountTransactionsResponse
 from main.api.schemas.dto.response.account.create_account_response import CreateAccountResponse
+from main.api.schemas.dto.response.credit.create_credit_repay_response import CreateCreditRepayResponse
+from main.api.schemas.dto.response.credit.create_credit_response import CreateCreditResponse
+from main.api.schemas.dto.response.credit.credit_history_response import CreditHistoryResponse
 from main.api.specs.response_specs import ResponseSpecs
 
 
@@ -21,6 +23,7 @@ class UserSteps:
         self.account_api = account_api
         self.credit_api = credit_api
 
+    @allure.step("Создать счёт пользователя")
     def create_account(self, expected_status: HTTPStatus) -> Response:
         return self.account_api.create_account(
             response_spec=ResponseSpecs.check_status(expected_status),
@@ -33,6 +36,7 @@ class UserSteps:
             response_model=CreateAccountResponse,
         )
 
+    @allure.step("Пополнить счёт пользователя")
     def deposit_to_account(
             self,
             data: AccountDepositRequest,
@@ -61,9 +65,9 @@ class UserSteps:
                             expected_status: HTTPStatus,
                             headers: Optional[dict] = None):
         return self.account_api.transfer_to_account(transfer_data,
-            headers=headers,
-            response_spec=ResponseSpecs.check_status(expected_status),
-        )
+                                                    headers=headers,
+                                                    response_spec=ResponseSpecs.check_status(expected_status),
+                                                    )
 
     @allure.step("Перевести деньги с одного счёта на другой с проверкой ответа")
     def transfer_to_account_validated(
@@ -76,7 +80,7 @@ class UserSteps:
         )
 
     @allure.step("Получить историю транзакций счёта")
-    def get_transactions_history(self, account_id, headers: Optional[dict] = None):
+    def get_transactions_history(self, account_id, headers: Optional[dict] = None) -> Response:
         return self.account_api.get_transactions_history(account_id, headers)
 
     @allure.step("Получить историю транзакций счёта с проверкой ответа")
@@ -92,16 +96,59 @@ class UserSteps:
 
     @allure.step("Запросить кредит")
     def create_credit(self, credit_data: CreateCreditRequest,
-                               headers: Optional[dict] = None):
-        return self.credit_api.create_credit(credit_data, headers)
+                      expected_status: HTTPStatus,
+                      headers: Optional[dict] = None) -> Response:
+        return self.credit_api.create_credit(
+            credit_data,
+            headers=headers,
+            response_spec=ResponseSpecs.check_status(expected_status),
+        )
+
+    @allure.step("Запросить кредит с проверкой ответа")
+    def create_credit_validated(self,
+                                credit_data: CreateCreditRequest
+                                ) -> CreateCreditResponse:
+        return self.credit_api.create_credit(
+            credit_data,
+            response_spec=ResponseSpecs.check_status(HTTPStatus.CREATED),
+            response_model=CreateCreditResponse,
+        )
 
     @allure.step("Погасить кредит")
-    def create_credit_repay(self, credit_data: CreateCreditRepayRequest,
-                                     headers: Optional[dict] = None):
-        return self.credit_api.create_credit_repay(credit_data, headers)
+    def create_credit_repay(self,
+                            credit_data: CreateCreditRepayRequest,
+                            expected_status: HTTPStatus,
+                            headers: Optional[dict] = None) -> Response:
+        return self.credit_api.create_credit_repay(
+            credit_data,
+            headers=headers,
+            response_spec=ResponseSpecs.check_status(expected_status)
+        )
+
+    @allure.step("Погасить кредит с проверкой ответа")
+    def create_credit_repay_validated(self, credit_data: CreateCreditRepayRequest,
+                                      headers: Optional[dict] = None) -> CreateCreditRepayResponse:
+        return self.credit_api.create_credit_repay(
+            credit_data,
+            headers,
+            response_spec=ResponseSpecs.check_status(HTTPStatus.OK),
+            response_model=CreateCreditRepayResponse
+        )
 
     @allure.step("Получить историю кредитов")
-    def get_credit_history(self,
+    def get_credit_history(self, expected_status: HTTPStatus,
                            headers: Optional[dict] = None,
-                           ):
-        return self.credit_api.get_credit_history(headers)
+                           ) -> Response:
+        return self.credit_api.get_credit_history(
+            headers,
+            response_spec=ResponseSpecs.check_status(expected_status))
+
+    @allure.step("Получить историю кредитов с проверкой ответа")
+    def get_credit_history_validated(self,
+                                     headers: Optional[dict] = None,
+                                     ) -> CreditHistoryResponse:
+        return self.credit_api.get_credit_history(
+            headers,
+            response_spec=ResponseSpecs.check_status(HTTPStatus.OK),
+            response_model=CreditHistoryResponse,
+        )

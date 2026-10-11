@@ -12,8 +12,9 @@ from main.api.schemas.dto.request.user.create_user_request import CreateUserRequ
 from main.api.schemas.dto.request.user.login_user_request import LoginUserRequest
 from main.api.schemas.dto.response.account.create_account_response import CreateAccountResponse
 from main.api.schemas.dto.response.credit.create_credit_repay_response import CreateCreditRepayResponse
+from collections.abc import Callable
 
-from main.db.repositories.account_repository import AccountRepository
+from main.api.schemas.dto.response.credit.create_credit_response import CreateCreditResponse
 from main.db.repositories.credit_repository import CreditRepository
 from main.utils.enums.role import Role
 from tests.fixtures.account import create_credit_repay_data
@@ -27,21 +28,14 @@ class TestCreateRepayCredit:
     def test_create_repay_credit(self, api_manager: ApiManager,
                                  created_credit_account,
                                  created_credit,
-                                 create_credit_repay_data: CreateCreditRepayRequest):
-        repay_data = create_credit_repay_data.model_copy(
-            update={'accountId': created_credit.id,
-                    'creditId': created_credit.creditId,
-                    'amount': created_credit.amount
-                    }
+                                 credit_repay_data_factory: Callable[..., CreateCreditRepayRequest]):
+        repay_data = credit_repay_data_factory(
+            accountId=created_credit.id,
+            creditId=created_credit.creditId,
+            amount=created_credit.amount
         )
 
-        repay_response = api_manager.user_steps.create_credit_repay(repay_data)
-
-        assert repay_response.status_code == HTTPStatus.OK, \
-            (f'Полученный статус= {repay_response.status_code}, '
-             f'отличается от 200 ok')
-
-        repay_response = CreateCreditRepayResponse.model_validate(repay_response.json())
+        repay_response = api_manager.user_steps.create_credit_repay_validated(repay_data)
 
         assert repay_response.creditId == repay_data.creditId, \
             (f'ID кредита= {repay_data.creditId},'
@@ -53,20 +47,14 @@ class TestCreateRepayCredit:
 
     @allure.story("Погашение кредита")
     @allure.title("Неверное тело запроса")
-    def test_credit_repay_to_account_invalid_body(self, api_manager: ApiManager,
-                                                  created_credit_account,
-                                                  create_credit_repay_data: CreateCreditRepayRequest,
-                                                  create_credit_data: CreateCreditRequest):
-        repay_data = create_credit_repay_data.model_copy(
-            update={'accountId': 'invalid_id'
-                    }
-        )
+    def test_credit_repay_to_account_invalid_body(
+            self,
+            api_manager: ApiManager,
+            created_credit_account,
+            credit_repay_data_factory: Callable[..., CreateCreditRepayRequest]):
+        repay_data = credit_repay_data_factory(accountId='invalid_id')
 
-        response = api_manager.user_steps.create_credit_repay(repay_data)
-
-        assert response.status_code == HTTPStatus.BAD_REQUEST, (
-            f'Ожидался статус {HTTPStatus.BAD_REQUEST}, '
-            f'получен {response.status_code}')
+        response = api_manager.user_steps.create_credit_repay(repay_data, HTTPStatus.BAD_REQUEST)
 
         response_body = response.json()
 
@@ -79,166 +67,80 @@ class TestCreateRepayCredit:
     )
     @allure.story("Погашение кредита")
     @allure.title("Кредит не принадлежит пользователю")
-    def test_credit_repay_to_account_forbidden(self, api_manager: ApiManager,
-                                               admin_credentials,
-                                               create_deposit_data: AccountDepositRequest,
-                                               created_credit,
-                                               create_credit_repay_data: CreateCreditRepayRequest):
-        api_manager.authenticate(admin_credentials)
-
-        user_data = RandomModelGenerator.generate(CreateUserRequest)
-
-        user_data = user_data.model_copy(
-            update={"role": Role.CREDIT_SECRET}
+    def test_credit_repay_to_account_forbidden(
+            self,
+            api_manager: ApiManager,
+            create_credit_user_with_second_account: CreateAccountResponse,
+            created_credit: CreateCreditResponse,
+            credit_repay_data_factory: Callable[..., CreateCreditRepayRequest]):
+        repay_data = credit_repay_data_factory(
+            accountId=create_credit_user_with_second_account.id,
+            creditId=created_credit.creditId,
+            amount=created_credit.amount,
         )
 
-        user_credentials = LoginUserRequest(
-            username=user_data.username,
-            password=user_data.password
+        response = api_manager.user_steps.create_credit_repay(
+            repay_data,
+            HTTPStatus.FORBIDDEN,
         )
 
-        new_user = api_manager.admin_steps.create_user(user_data)
-
-        assert new_user.status_code == HTTPStatus.OK, (
-            f'Полученный статус {new_user.status_code}, '
-            f'ожидался {HTTPStatus.OK}.'
-        )
-
-        api_manager.authenticate(user_credentials)
-
-        account_response = api_manager.user_steps.create_account()
-
-        assert account_response.status_code == HTTPStatus.CREATED, (
-            f'Полученный статус {account_response.status_code}, '
-            f'ожидался {HTTPStatus.CREATED}.'
-        )
-
-        new_account = CreateAccountResponse.model_validate(account_response.json())
-
-        deposit_data = create_deposit_data.model_copy(
-            update={
-                'accountId': new_account.id
-            }
-        )
-
-        summa = 0
-
-        while summa < created_credit.amount:
-            response = api_manager.user_steps.deposit_to_account(deposit_data)
-
-            assert response.status_code == HTTPStatus.OK, (
-                f'Полученный статус {response.status_code}, '
-                f'ожидался {HTTPStatus.OK}.'
-            )
-
-            summa += deposit_data.amount
-
-        repay_data = create_credit_repay_data.model_copy(
-            update={'accountId': new_account.id,
-                    'creditId': created_credit.creditId,
-                    'amount': created_credit.amount
-                    }
-        )
-
-        response = api_manager.user_steps.create_credit_repay(repay_data)
-
-        assert response.status_code == HTTPStatus.FORBIDDEN, (
-            f'Ожидался статус {HTTPStatus.FORBIDDEN}, '
-            f'получен {response.status_code}')
+        response_body = response.json()
+        assert "error" in response_body
+        assert response_body["error"]
 
     @allure.story("Погашение кредита")
     @allure.title("Кредит не найден")
     def test_no_credit_id(self, api_manager: ApiManager,
                           created_credit,
-                          create_credit_repay_data: CreateCreditRepayRequest,
+                          nonexistent_id: Callable[
+                              [Callable[[int], object | None], int, int], int,],
+                          credit_repay_data_factory: Callable[..., CreateCreditRepayRequest],
                           credit_repository: CreditRepository):
+        repay_data = credit_repay_data_factory(
+            accountId=created_credit.id,
+            creditId=nonexistent_id(
+                credit_repository.get_credit_by_id,
+                1,
+                9999,
+            ),
+            amount=created_credit.amount
 
-        while True:
-            candidate_id = random.randint(1, 9999)
-            credit_from_db = credit_repository.get_credit_by_id(candidate_id)
-
-            if credit_from_db is None:
-                break
-
-        repay_data = create_credit_repay_data.model_copy(
-            update={'accountId': created_credit.id,
-                    'creditId': candidate_id,
-                    'amount': created_credit.amount
-                    }
         )
-
-        repay_response = api_manager.user_steps.create_credit_repay(repay_data)
-
-        assert repay_response.status_code == HTTPStatus.NOT_FOUND, \
-            (f'Полученный статус= {repay_response.status_code}, '
-             f'отличается от 404 NOT_FOUND')
+        repay_response = api_manager.user_steps.create_credit_repay(repay_data, HTTPStatus.NOT_FOUND)
 
         response_body = repay_response.json()
 
         assert "error" in response_body
         assert response_body["error"]
 
+    @pytest.mark.parametrize(
+        "repay_amount",
+        [
+            pytest.param(-1, id="insufficient_amount"),
+            pytest.param(1, id="extra_amount"),
+        ],
+        indirect=True,
+    )
     @allure.story("Погашение кредита")
-    @allure.title("Недостаточная сумма погашения кредита")
-    def test_create_credit_repay_with_insufficient_amount(self,
-                                                          api_manager: ApiManager,
-                                                          created_credit_account,
-                                                          created_credit,
-                                                          create_credit_repay_data: CreateCreditRepayRequest):
-
-        repay_data = create_credit_repay_data.model_copy(
-            update={'accountId': created_credit.id,
-                    'creditId': created_credit.creditId,
-                    'amount': created_credit.amount - 1
-                    }
+    @allure.title("Некорректная сумма погашения кредита")
+    def test_create_credit_repay_invalid_amount(
+            self,
+            api_manager: ApiManager,
+            created_credit: CreateCreditResponse,
+            repay_amount: float,
+            credit_repay_data_factory: Callable[..., CreateCreditRepayRequest],
+    ):
+        repay_data = credit_repay_data_factory(
+            accountId=created_credit.id,
+            creditId=created_credit.creditId,
+            amount=repay_amount,
         )
 
-        repay_response = api_manager.user_steps.create_credit_repay(repay_data)
-
-        assert repay_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, (
-            f'Ожидался статус {HTTPStatus.UNPROCESSABLE_ENTITY}, '
-            f'получен {repay_response.status_code}')
-
-        response_body = repay_response.json()
-
-        assert "error" in response_body
-        assert response_body["error"]
-
-    @allure.story("Погашение кредита")
-    @allure.title("Сумма погашения кредита превышает остаток долга по кредиту")
-    def test_create_credit_repay_amount_exceeds_debt(self,
-                                                          api_manager: ApiManager,
-                                                          created_credit_account,
-                                                          created_credit,
-                                                          create_deposit_data: AccountDepositRequest,
-                                                          create_credit_repay_data: CreateCreditRepayRequest):
-        deposit_data = create_deposit_data.model_copy(
-            update={
-                'accountId': created_credit.id
-            }
+        response = api_manager.user_steps.create_credit_repay(
+            repay_data,
+            HTTPStatus.UNPROCESSABLE_ENTITY,
         )
 
-        response = api_manager.user_steps.deposit_to_account(deposit_data)
-
-        assert response.status_code == HTTPStatus.OK, (
-            f'Полученный статус {response.status_code}, '
-            f'ожидался {HTTPStatus.OK}.'
-        )
-
-        repay_data = create_credit_repay_data.model_copy(
-            update={'accountId': created_credit.id,
-                    'creditId': created_credit.creditId,
-                    'amount': created_credit.amount + 1
-                    }
-        )
-
-        repay_response = api_manager.user_steps.create_credit_repay(repay_data)
-
-        assert repay_response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY, (
-            f'Ожидался статус {HTTPStatus.UNPROCESSABLE_ENTITY}, '
-            f'получен {repay_response.status_code}')
-
-        response_body = repay_response.json()
-
+        response_body = response.json()
         assert "error" in response_body
         assert response_body["error"]

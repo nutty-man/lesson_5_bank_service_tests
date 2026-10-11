@@ -1,5 +1,6 @@
 import pytest
-
+from main.utils.calc_utils.utils import get_candidate_id
+from collections.abc import Callable
 from main.api.classes.api_manager import ApiManager
 from main.api.config.api_config import ApiConfig
 from main.api.schemas.dto.request.user.login_user_request import LoginUserRequest
@@ -31,3 +32,18 @@ def admin_credentials(config: ApiConfig) -> LoginUserRequest:
         username=config.username,
         password=config.password
     )
+
+@pytest.fixture
+def nonexistent_id():
+    def generate(
+        find_by_id: Callable[[int], object | None],
+        min_id: int,
+        max_id: int,
+    ) -> int:
+        return get_candidate_id(
+            find_by_id=find_by_id,
+            min_id=min_id,
+            max_id=max_id,
+        )
+
+    return generate

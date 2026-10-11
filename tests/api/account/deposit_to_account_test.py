@@ -41,10 +41,14 @@ class TestDepositToAccount:
             self,
             api_manager: ApiManager,
             created_account: CreateAccountResponse,
-            nonexistent_account_id: Callable[[int, int], int],
+            account_repository: AccountRepository,
+            nonexistent_id: Callable[
+                [Callable[[int], object | None], int, int], int,],
             deposit_data_factory: Callable[[int | str], AccountDepositRequest],
     ):
-        data = deposit_data_factory(nonexistent_account_id(1, 9999))
+        data = deposit_data_factory(nonexistent_id(
+            account_repository.get_account_by_id,
+            1, 9999))
 
         response = api_manager.user_steps.deposit_to_account(
             data,

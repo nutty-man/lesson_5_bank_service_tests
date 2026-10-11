@@ -10,6 +10,12 @@ def get_transaction_types(transactions: list[Transactions]) -> set[str]:
 def round_balance(balance: float) -> int:
     return round(balance)
 
+def find_credit_by_id(credits, credit_id: int):
+    for credit in credits:
+        if credit.creditId == credit_id:
+            return credit
+
+    return None
 
 def get_candidate_id(
         find_by_id: Callable[[int], object | None],

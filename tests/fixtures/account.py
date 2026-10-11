@@ -1,5 +1,4 @@
 from collections.abc import Callable
-from http import HTTPStatus
 
 import pytest
 import random
@@ -17,7 +16,6 @@ from main.api.schemas.context.transaction_history_context import TransactionHist
 from main.api.schemas.dto.response.account.create_account_response import CreateAccountResponse
 from main.api.schemas.dto.response.user.create_user_response import CreateUserResponse
 from main.db.repositories.account_repository import AccountRepository
-from main.utils.calc_utils.utils import get_candidate_id
 
 
 @pytest.fixture
@@ -48,17 +46,6 @@ def prepared_transaction_history(
         account=created_account,
         expected_balance=deposit_data.amount - data.amount,
     )
-
-@pytest.fixture
-def nonexistent_account_id(account_repository: AccountRepository):
-    def generate(min_id: int, max_id: int) -> int:
-        return get_candidate_id(
-            find_by_id=account_repository.get_account_by_id,
-            min_id=min_id,
-            max_id=max_id,
-        )
-
-    return generate
 
 @pytest.fixture
 def account_repository(db_session: Session):

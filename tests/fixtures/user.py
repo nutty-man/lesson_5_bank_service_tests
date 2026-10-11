@@ -1,7 +1,9 @@
+from collections.abc import Callable
 from http import HTTPStatus
 
 import pytest
 
+from main.api.classes.api_manager import ApiManager
 from main.api.data_generators.model_generator import RandomModelGenerator
 from main.api.schemas.dto.request.user.create_user_request import CreateUserRequest
 from sqlalchemy.orm import Session
@@ -15,33 +17,33 @@ from main.utils.enums.role import Role
 def create_user_request():
     return RandomModelGenerator.generate(CreateUserRequest)
 
-
 @pytest.fixture
 def user_repository(db_session: Session):
     return UserRepository(db_session)
 
-@pytest.fixture
-def created_user(create_user_request: CreateUserRequest, api_manager):
-    response = api_manager.admin_steps.create_user(create_user_request)
-
-    assert response.status_code == HTTPStatus.OK, (f'Полученный статус= {response.status_code}, '
-                                                   f'отличается от 200 OK')
-
-    user = CreateUserResponse.model_validate(response.json())
-    return user
 
 @pytest.fixture
-def created_credit_user(create_user_request: CreateUserRequest, api_manager):
+def user_factory(
+    create_user_request: CreateUserRequest,
+    api_manager: ApiManager,
+) -> Callable[..., CreateUserResponse]:
+    def create(
+        role: Role | None = None,
+        user_data: CreateUserRequest | None = None,
+    ) -> CreateUserResponse:
+        data = user_data if user_data is not None else create_user_request
 
-    user_data = create_user_request.model_copy(
-        update={"role": Role.CREDIT_SECRET}
-    )
+        if role is not None:
+            data = data.model_copy(update={"role": role})
 
-    response = api_manager.admin_steps.create_user(user_data)
+        return api_manager.admin_steps.create_user_validated(data)
 
-    assert response.status_code == HTTPStatus.OK, (f'Полученный статус= {response.status_code}, '
-                                                   f'отличается от 200 OK')
+    return create
 
-    user = CreateUserResponse.model_validate(response.json())
+@pytest.fixture
+def created_user(user_factory):
+    return user_factory(None)
 
-    return user
+@pytest.fixture
+def created_credit_user(user_factory):
+    return user_factory(Role.CREDIT_SECRET)

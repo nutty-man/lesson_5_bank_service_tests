@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from http import HTTPStatus
 
 import pytest
@@ -21,7 +22,6 @@ class TestAccountTransactions:
             api_manager: ApiManager,
             prepared_transaction_history: TransactionHistoryContext,
     ):
-
         response = api_manager.user_steps.get_transactions_history_validated(
             prepared_transaction_history.account.id
         )
@@ -84,9 +84,11 @@ class TestAccountTransactions:
     @allure.title("Аккаунт с указанным id не найден или не принадлежит пользователю")
     def test_account_transactions_account_not_found(self, api_manager: ApiManager, created_account,
                                                     account_repository: AccountRepository,
-                                                    nonexistent_account_id):
-
-        candidate_id = nonexistent_account_id(1, 9999)
+                                                    nonexistent_id: Callable[
+                                                        [Callable[[int], object | None], int, int], int,]):
+        candidate_id = nonexistent_id(
+            account_repository.get_account_by_id,
+            1, 9999)
 
         response = api_manager.user_steps.get_transactions_history(candidate_id)
 
