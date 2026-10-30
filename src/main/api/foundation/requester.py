@@ -1,11 +1,14 @@
 import json
 import logging
+from collections.abc import Callable
+from requests import Response
 from typing import Any
 
 import allure
 import requests
 
 from main.api.config.api_config import ApiConfig
+from main.api.schemas.dto.base_model import BaseModel
 from main.api.specs.request_specs import RequestSpecs
 from main.utils.logger.logger import log_request_and_response
 from main.utils.logger.mask import sanitize
@@ -26,8 +29,10 @@ class Requester:
             method: str,
             endpoint: str,
             json_data: dict[str, Any] | None = None,
+            response_spec: Callable[[Response], None] | None = None,
+            response_model: type[BaseModel] | None = None,
             headers: dict[str, str | None] | None = None,
-    ) -> requests.Response:
+    ) -> Response | BaseModel:
         url = f"{self.base_url.rstrip('/')}/{endpoint.lstrip('/')}"
 
         with allure.step(f"{method.upper()} {endpoint}"):
@@ -68,5 +73,11 @@ class Requester:
             )
 
             log_request_and_response(response)
+
+            if response_spec is not None:
+                response_spec(response)
+
+            if response_model is not None:
+                return response_model.model_validate(response.json())
 
         return response
